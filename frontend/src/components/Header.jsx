@@ -1,11 +1,11 @@
 import './Header.css'
 
-function Header({ activeTab, onTabChange, hasDocument }) {
+function Header({ activeTab, onTabChange, hasDocument, theme, onThemeToggle }) {
     const tabs = [
         { id: 'upload', label: 'Documents', icon: '📁' },
         { id: 'viewer', label: 'Viewer', icon: '👁️', disabled: !hasDocument },
         { id: 'chat', label: 'Ask AI', icon: '💬', disabled: !hasDocument },
-        { id: 'review', label: 'Review', icon: '✓', disabled: !hasDocument }
+        { id: 'review', label: 'Human Review', icon: '✓', disabled: !hasDocument }
     ]
 
     return (
@@ -34,6 +34,13 @@ function Header({ activeTab, onTabChange, hasDocument }) {
                 </nav>
 
                 <div className="header-actions">
+                    <button
+                        className="btn btn-ghost btn-icon"
+                        onClick={onThemeToggle}
+                        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                    >
+                        {theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
                     <div className="status-indicator online">
                         <span className="status-dot"></span>
                         <span className="status-text">API Connected</span>

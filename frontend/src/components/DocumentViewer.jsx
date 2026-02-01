@@ -87,6 +87,21 @@ function DocumentViewer({ document }) {
 
             {/* Main Content */}
             <main className="viewer-main">
+                {/* Error Banner */}
+                {document.errors && document.errors.length > 0 && (
+                    <div className="error-banner animate-fade-in">
+                        <div className="error-header">
+                            <span className="error-icon">⚠️</span>
+                            <h4>Processing Issues Detected</h4>
+                        </div>
+                        <ul className="error-list">
+                            {document.errors.map((error, i) => (
+                                <li key={i}>{error}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
                 {activeSection === 'summary' && (
                     <div className="section-content animate-fade-in">
                         <div className="section-header-row">
@@ -179,7 +194,7 @@ function DocumentViewer({ document }) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {(table.rows || []).slice(0, 5).map((row, j) => (
+                                                {(table.rows || []).map((row, j) => (
                                                     <tr key={j}>
                                                         {row.map((cell, k) => (
                                                             <td key={k}>{cell}</td>
@@ -188,9 +203,6 @@ function DocumentViewer({ document }) {
                                                 ))}
                                             </tbody>
                                         </table>
-                                        {table.rows?.length > 5 && (
-                                            <p className="more-rows">+ {table.rows.length - 5} more rows</p>
-                                        )}
                                     </div>
                                 ))}
                             </div>

@@ -226,9 +226,31 @@ class DocumentLayoutDetector:
         
         if self.model is not None and YOLO_AVAILABLE:
             detections = self._yolo_detect(image, page_number)
+            
+            # If no tables found, try fallback for tables
+            if not any(d.label == "table" for d in detections):
+                logger.debug("YOLO found no tables, trying OpenCV fallback")
+                # Prepare gray image for OpenCV
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image.copy()
+                
+                fallback_tables = self._detect_tables_opencv(gray, page_number)
+                if fallback_tables:
+                    logger.info(f"OpenCV fallback found {len(fallback_tables)} tables")
+                    detections.extend(fallback_tables)
+                    # Re-apply NMS to ensure cleanliness
+                    detections = self._apply_nms(detections)
         else:
             # Fallback to OpenCV-based detection
             detections = self._fallback_detect(image, page_number)
+            
+        # Add padding to tables to ensure full capture of edge columns
+        height, width = image.shape[:2]
+        for det in detections:
+             if det.label == "table":
+                  det.x1 = max(0.0, det.x1 - 20)
+                  det.y1 = max(0.0, det.y1 - 20)
+                  det.x2 = min(float(width), det.x2 + 20)
+                  det.y2 = min(float(height), det.y2 + 20)
         
         processing_time = (time.time() - start_time) * 1000
         
@@ -390,7 +412,7 @@ class DocumentLayoutDetector:
                         y1=float(y),
                         x2=float(x + w),
                         y2=float(y + h),
-                        confidence=min(0.9, line_density * 10),
+                        confidence=float(min(0.9, line_density * 10)),
                         label="table",
                         class_id=0,
                         page_number=page_number
@@ -440,7 +462,7 @@ class DocumentLayoutDetector:
                             y1=float(y),
                             x2=float(x + w),
                             y2=float(y + h),
-                            confidence=min(0.8, std_dev / 100),
+                            confidence=float(min(0.8, std_dev / 100)),
                             label="figure",
                             class_id=1,
                             page_number=page_number

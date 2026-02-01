@@ -46,8 +46,8 @@ class QdrantVectorStore:
     # Embedding dimensions for different models
     DIMENSIONS = {
         "text": 384,      # all-MiniLM-L6-v2
-        "image": 512,     # CLIP ViT-B/32
-        "table": 384      # Same as text for now
+        "images": 512,    # CLIP ViT-B/32
+        "tables": 384     # Same as text for now
     }
     
     def __init__(
@@ -283,6 +283,9 @@ class QdrantVectorStore:
         """
         collection_name = self.collections["text"]
         
+        # DEBUG: Inspect client
+
+        
         query_filter = None
         if document_id:
             query_filter = Filter(
@@ -294,12 +297,12 @@ class QdrantVectorStore:
                 ]
             )
         
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=collection_name,
-            query_vector=query_embedding,
+            query=query_embedding,
             query_filter=query_filter,
             limit=limit
-        )
+        ).points
         
         return [
             SearchResult(
@@ -331,12 +334,12 @@ class QdrantVectorStore:
                 ]
             )
         
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=collection_name,
-            query_vector=query_embedding,
+            query=query_embedding,
             query_filter=query_filter,
             limit=limit
-        )
+        ).points
         
         return [
             SearchResult(
@@ -368,12 +371,12 @@ class QdrantVectorStore:
                 ]
             )
         
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=collection_name,
-            query_vector=query_embedding,
+            query=query_embedding,
             query_filter=query_filter,
             limit=limit
-        )
+        ).points
         
         return [
             SearchResult(

@@ -142,8 +142,10 @@ class TextReasoningAgent:
     def _call_llm(self, prompt: str, system_prompt: str = None) -> str:
         """Make a call to the LLM API"""
         if not self.client:
-            # Return mock response if no client
-            return self._mock_response(prompt)
+            # Re-try initialization
+            self._initialize_client()
+            if not self.client:
+                raise Exception("LLM client not initialized. Check API Key configuration (GROQ_API_KEY or ANTHROPIC_API_KEY).")
         
         try:
             if self.provider == "groq":
@@ -171,28 +173,7 @@ class TextReasoningAgent:
                 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
-            return self._mock_response(prompt)
-    
-    def _mock_response(self, prompt: str) -> str:
-        """Generate mock response when LLM is unavailable"""
-        if "ELI5" in prompt or "simple" in prompt.lower():
-            return "This document is like a report card for a company. It shows how much money they made and how well they did."
-        elif "expert" in prompt.lower() or "technical" in prompt.lower():
-            return "This quarterly financial disclosure presents consolidated financial statements including revenue recognition per ASC 606, EBITDA margins, and year-over-year comparisons of key performance indicators."
-        elif "entities" in prompt.lower():
-            return json.dumps([
-                {"text": "Q4 2025", "type": "date"},
-                {"text": "$2.5 billion", "type": "money"},
-                {"text": "Company Inc.", "type": "organization"}
-            ])
-        elif "key points" in prompt.lower():
-            return json.dumps([
-                "Revenue increased by 15% year-over-year",
-                "Operating margin improved to 18%",
-                "Customer base expanded to 50 million users"
-            ])
-        else:
-            return "This is a financial report document containing quarterly performance metrics and analysis."
+            raise e
     
     def _generate_summary(self, text: str) -> str:
         """Generate a general summary"""

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     groq_api_key: Optional[str] = Field(default=None, env="GROQ_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
     llm_provider: str = Field(default="groq", env="LLM_PROVIDER")
-    llm_model: str = Field(default="llama-3.3-70b-versatile", env="LLM_MODEL")
+    llm_model: str = Field(default="llama-3.1-8b-instant", env="LLM_MODEL")
     
     # Qdrant Configuration
     qdrant_host: str = Field(default="localhost", env="QDRANT_HOST")
@@ -83,6 +83,9 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://localhost:3000",
         env="CORS_ORIGINS"
     )
+    
+    # System Configuration
+    poppler_path: Optional[str] = Field(default=None, env="POPPLER_PATH")
     
     # Storage
     upload_dir: str = Field(default="./uploads", env="UPLOAD_DIR")

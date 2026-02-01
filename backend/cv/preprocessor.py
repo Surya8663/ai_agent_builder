@@ -6,6 +6,7 @@ contrast enhancement, and PDF to image conversion.
 """
 
 import logging
+import os
 from typing import List, Optional, Tuple, Union
 from pathlib import Path
 from dataclasses import dataclass
@@ -13,6 +14,13 @@ import numpy as np
 from PIL import Image
 import cv2
 import io
+
+# Import settings to access configuration (including POPPLER_PATH)
+try:
+    from ..config import get_settings
+except ImportError:
+    # Fallback for direct script execution
+    from backend.config import get_settings
 
 try:
     from pdf2image import convert_from_path, convert_from_bytes
@@ -80,20 +88,34 @@ class ImagePreprocessor:
         
         dpi = dpi or self.config.dpi
         
+        
+        # Check for POPPLER_PATH in settings
+        # Note: os.environ might not have it if loaded only by Pydantic
+        settings = get_settings()
+        poppler_path = settings.poppler_path
+        
+        if not poppler_path:
+             # Fallback to env var just in case
+             poppler_path = os.environ.get("POPPLER_PATH")
+
+        print(f"DEBUG POPPLER: Path from settings is '{poppler_path}'")
+        
         try:
             if isinstance(pdf_path, bytes):
                 pil_images = convert_from_bytes(
                     pdf_path,
                     dpi=dpi,
                     first_page=first_page,
-                    last_page=last_page
+                    last_page=last_page,
+                    poppler_path=poppler_path
                 )
             else:
                 pil_images = convert_from_path(
                     str(pdf_path),
                     dpi=dpi,
                     first_page=first_page,
-                    last_page=last_page
+                    last_page=last_page,
+                    poppler_path=poppler_path
                 )
             
             # Convert PIL images to numpy arrays (BGR for OpenCV)

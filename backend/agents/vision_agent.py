@@ -12,6 +12,8 @@ Detects document layout elements using YOLO and OpenCV:
 import logging
 from typing import Dict, Any, List
 import time
+import os
+import cv2
 import numpy as np
 
 from .state import (
@@ -87,37 +89,46 @@ class VisionAgent:
             for page_data in pages:
                 page_number = page_data.get("page_number", 0)
                 
-                # In real implementation, image would be stored separately
-                # For now, we'll create a placeholder detection
-                # In production, images are passed via file paths or stored in state
+                # Load image from path
+                image_path = page_data.get("image_path")
                 
+                if not image_path or not os.path.exists(image_path):
+                     logger.warning(f"Image path not found for page {page_number}")
+                     continue
+                     
+                import cv2
+                image = cv2.imread(image_path)
+                if image is None:
+                     logger.warning(f"Failed to load image: {image_path}")
+                     continue
+
                 logger.debug(f"Processing page {page_number}")
+
+                # Run detection
+                result = self.detector.detect(image, page_number)
                 
-                # Simulate detection result for demo
-                # In real implementation:
-                # image = load_image_from_state(page_data)
-                # result = self.detector.detect(image, page_number)
-                
-                # For now, create mock detections based on page dimensions
-                width = page_data.get("width", 2480)  # A4 at 300 DPI
-                height = page_data.get("height", 3508)
-                
-                # Create sample detections for demonstration
-                sample_detections = self._create_sample_detections(
-                    page_number, width, height
-                )
-                
-                for det in sample_detections:
-                    all_detections.append(det)
+                # Convert results
+                for bbox in result.detections:
+                    detection = Detection(
+                        x1=bbox.x1,
+                        y1=bbox.y1,
+                        x2=bbox.x2,
+                        y2=bbox.y2,
+                        label=bbox.label,
+                        confidence=bbox.confidence,
+                        page_number=page_number
+                    )
                     
-                    if det.label == "table":
-                        tables.append(det)
-                    elif det.label == "figure":
-                        figures.append(det)
-                    elif det.label == "chart":
-                        charts.append(det)
-                    elif det.label == "signature":
-                        signatures.append(det)
+                    all_detections.append(detection)
+                    
+                    if bbox.label == "table":
+                        tables.append(detection)
+                    elif bbox.label == "figure":
+                         figures.append(detection)
+                    elif bbox.label == "chart":
+                         charts.append(detection)
+                    elif bbox.label == "signature":
+                         signatures.append(detection)
             
             processing_time = (time.time() - start_time) * 1000
             

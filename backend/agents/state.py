@@ -27,15 +27,17 @@ class ProcessingStatus(str, Enum):
 class PageImage:
     """Represents a single page image"""
     page_number: int
-    image: np.ndarray
+    image: Optional[np.ndarray]
     width: int
     height: int
+    image_path: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
         return {
             "page_number": self.page_number,
             "width": self.width,
-            "height": self.height
+            "height": self.height,
+            "image_path": self.image_path
         }
 
 

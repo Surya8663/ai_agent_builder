@@ -12,6 +12,16 @@ function App() {
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [activeTab, setActiveTab] = useState('upload')
   const [isLoading, setIsLoading] = useState(false)
+  const [theme, setTheme] = useState('dark')
+
+  // Theme management
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark')
+  }
 
   // Fetch documents on mount
   useEffect(() => {
@@ -77,6 +87,8 @@ function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         hasDocument={!!selectedDocument}
+        theme={theme}
+        onThemeToggle={toggleTheme}
       />
 
       <main className="main-content">

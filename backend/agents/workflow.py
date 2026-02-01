@@ -11,6 +11,7 @@ import logging
 from typing import Dict, Any, Optional, Callable
 from datetime import datetime
 import time
+import inspect
 
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
@@ -244,7 +245,8 @@ async def run_document_pipeline(
                 page_number=page.get("page_number", i),
                 image=page.get("image"),
                 width=page.get("width", 0),
-                height=page.get("height", 0)
+                height=page.get("height", 0),
+                image_path=page.get("image_path")
             ))
         else:
             # Assume it's a numpy array
@@ -268,23 +270,36 @@ async def run_document_pipeline(
     
     # Compile workflow
     app = compile_workflow()
+    # app = compile_workflow() # Original line
     
     # Run the workflow
     final_state = None
     
     try:
-        # Execute workflow
-        for event in app.stream(initial_state):
+        # Execute graph
+        logger.info("Initializing workflow graph...")
+        # The original `compile_workflow` function is used here,
+        # as `workflow` and `memory` are not directly available in this scope.
+        # If checkpointing is desired, `compile_workflow` should be called with a checkpointer.
+        app = compile_workflow() 
+        logger.info("Graph compiled. Starting execution stream...")
+        
+        chunk_count = 0
+        for event in app.stream(initial_state, config):
+            chunk_count += 1
+            logger.info(f"Received stream event #{chunk_count}: keys={event.keys()}")
             # Get current node and state
             for node_name, node_state in event.items():
                 logger.debug(f"Completed node: {node_name}")
                 
                 if progress_callback:
-                    await progress_callback({
+                    res = progress_callback({
                         "document_id": document_id,
                         "current_agent": node_name,
                         "status": node_state.get("status", "processing")
                     })
+                    if inspect.isawaitable(res):
+                        await res
                 
                 final_state = node_state
         

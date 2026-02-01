@@ -7,7 +7,10 @@ Endpoints for document upload, processing, and result retrieval.
 import logging
 from typing import Optional, List
 from pathlib import Path
+import shutil
 import uuid
+import os
+import cv2
 import aiofiles
 from datetime import datetime
 
@@ -144,12 +147,13 @@ async def process_document(document_id: str):
         filename = doc["filename"]
         
         # Load pages from file
-        pages = await load_document_pages(file_path, file_type)
+        pages = await load_document_pages(file_path, file_type, document_id)
         
         doc["page_count"] = len(pages)
         doc["status"] = ProcessingStatus.VISION_PROCESSING.value
         
         # Run pipeline
+        logger.info(f"Starting pipeline execution for {document_id}")
         result = await run_document_pipeline(
             document_id=document_id,
             filename=filename,
@@ -157,6 +161,7 @@ async def process_document(document_id: str):
             pages=pages,
             progress_callback=lambda p: update_progress(document_id, p)
         )
+        logger.info(f"Pipeline execution finished for {document_id}. Result keys: {result.keys()}")
         
         # Store results
         doc["results"] = result
@@ -167,7 +172,7 @@ async def process_document(document_id: str):
         if doc["status"] == ProcessingStatus.COMPLETED.value:
             try:
                 rag = RAGPipeline()
-                rag.index_document(document_id, result.get("fused_output", {}))
+                await rag.index_document(document_id, result.get("fused_output", {}))
             except Exception as e:
                 logger.error(f"RAG indexing failed: {e}")
         
@@ -178,30 +183,63 @@ async def process_document(document_id: str):
         if document_id in documents_store:
             documents_store[document_id]["status"] = ProcessingStatus.FAILED.value
             documents_store[document_id]["errors"].append(str(e))
+    finally:
+        # Clean up temporary page images directory
+        settings = get_settings()
+        page_images_dir = Path(settings.upload_dir) / document_id
+        if page_images_dir.exists() and page_images_dir.is_dir():
+            try:
+                shutil.rmtree(page_images_dir)
+                logger.info(f"Cleaned up page images directory for {document_id}: {page_images_dir}")
+            except Exception as e:
+                logger.warning(f"Failed to clean up page images directory for {document_id}: {e}")
 
 
-async def load_document_pages(file_path: str, file_type: str) -> list:
-    """Load document pages from file"""
+async def load_document_pages(file_path: str, file_type: str, document_id: str) -> list:
+    """Load document pages from file, save them as images, and return their paths."""
     from ...cv.preprocessor import ImagePreprocessor
     
     preprocessor = ImagePreprocessor()
     
+    pages_metadata = []
+    settings = get_settings()
+    
+    # Create a unique directory for this document's page images
+    base_upload_dir = Path(settings.upload_dir) / document_id
+    os.makedirs(base_upload_dir, exist_ok=True)
+    
     if file_type == "pdf":
         # Convert PDF to images
-        pages = preprocessor.pdf_to_images(file_path)
-        return [
-            {
-                "page_number": i,
-                "image": page,
-                "width": page.shape[1],
-                "height": page.shape[0]
-            }
-            for i, page in enumerate(pages)
-        ]
+        images = preprocessor.pdf_to_images(file_path)
+        
+        for i, img in enumerate(images):
+            # Save image to disk
+            image_filename = f"page_{i+1}.png"
+            image_path = base_upload_dir / image_filename
+            
+            # Save using cv2 (img is BGR numpy array)
+            if not cv2.imwrite(str(image_path), img):
+                logger.error(f"Failed to write image to {image_path}")
+            
+            pages_metadata.append({
+                "page_number": i + 1,
+                "width": img.shape[1],
+                "height": img.shape[0],
+                "image_path": str(image_path)
+            })
+        return pages_metadata
     else:
         # Load single image
-        import cv2
         image = cv2.imread(file_path)
+        
+        if image is None:
+            raise HTTPException(status_code=400, detail=f"Could not load image file: {file_path}")
+
+        # Save single image to disk
+        image_filename = "page_1.png"
+        image_path = base_upload_dir / image_filename
+        cv2.imwrite(str(image_path), image)
+        
         return [{
             "page_number": 0,
             "image": image,
@@ -210,7 +248,7 @@ async def load_document_pages(file_path: str, file_type: str) -> list:
         }]
 
 
-def update_progress(document_id: str, progress_data: dict):
+async def update_progress(document_id: str, progress_data: dict):
     """Update document processing progress"""
     if document_id in documents_store:
         documents_store[document_id]["current_agent"] = progress_data.get("current_agent")

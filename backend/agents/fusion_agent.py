@@ -350,37 +350,108 @@ class FusionAgent:
         text_blocks: List[Dict],
         table_bounds: Dict
     ) -> tuple:
-        """Parse table structure from text blocks"""
+        """
+        Parse table structure from text blocks with column alignment.
+        """
         if not text_blocks:
             return [], []
         
-        # Sort by row (y position) then column (x position)
-        sorted_blocks = sorted(
-            text_blocks,
-            key=lambda b: (b.get("y1", 0), b.get("x1", 0))
-        )
-        
-        # Group into rows
+        # 1. Group by Row (Y-axis)
+        sorted_by_y = sorted(text_blocks, key=lambda b: b.get("y1", 0))
         rows = []
-        current_row = []
-        current_y = sorted_blocks[0].get("y1", 0)
-        row_threshold = 20
+        current_row_blocks = []
+        current_y = sorted_by_y[0].get("y1", 0)
+        row_threshold = 15  # pixels
         
-        for block in sorted_blocks:
+        for block in sorted_by_y:
             if abs(block.get("y1", 0) - current_y) > row_threshold:
-                if current_row:
-                    rows.append([b.get("text", "") for b in current_row])
-                current_row = [block]
+                if current_row_blocks:
+                    rows.append(current_row_blocks)
+                current_row_blocks = [block]
                 current_y = block.get("y1", 0)
             else:
-                current_row.append(block)
+                current_row_blocks.append(block)
         
-        if current_row:
-            rows.append([b.get("text", "") for b in current_row])
+        if current_row_blocks:
+            rows.append(current_row_blocks)
+
+        if not rows:
+            return [], []
+
+        # 2. Detect Columns (X-axis)
+        # Collect all block x-intervals, ignoring spanning cells
+        table_width = table_bounds.get("x2", 0) - table_bounds.get("x1", 0)
+        x_intervals = []
         
-        # First row as headers (simple heuristic)
-        headers = rows[0] if rows else []
-        data_rows = rows[1:] if len(rows) > 1 else []
+        for row in rows:
+            for block in row:
+                block_w = block.get("x2", 0) - block.get("x1", 0)
+                # Ignore cells that span more than 40% of table (likely headers/titles/totals)
+                if table_width > 0 and block_w > 0.4 * table_width:
+                     continue
+                x_intervals.append((block.get("x1", 0), block.get("x2", 0)))
+        
+        if not x_intervals:
+            # Fallback: if all cells are wide, use all of them
+             for row in rows:
+                for block in row:
+                    x_intervals.append((block.get("x1", 0), block.get("x2", 0)))
+            
+        # Merge overlapping intervals to find column zones
+        x_intervals.sort(key=lambda x: x[0])
+        merged_cols = []
+        if x_intervals:
+            curr_x1, curr_x2 = x_intervals[0]
+            for next_x1, next_x2 in x_intervals[1:]:
+                # If overlap or close enough (within 10px)
+                if next_x1 < curr_x2 + 10: 
+                    curr_x2 = max(curr_x2, next_x2)
+                else:
+                    merged_cols.append((curr_x1, curr_x2))
+                    curr_x1, curr_x2 = next_x1, next_x2
+            merged_cols.append((curr_x1, curr_x2))
+        
+        # 3. Build Grid
+        table_grid = []
+        for row_blocks in rows:
+            row_data = [""] * len(merged_cols)
+            for block in row_blocks:
+                # Find which column this block belongs to (max overlap)
+                block_x1 = block.get("x1", 0)
+                block_x2 = block.get("x2", 0)
+                block_center = (block_x1 + block_x2) / 2
+                
+                best_col_idx = -1
+                
+                # Simple center containment check first
+                for i, (col_x1, col_x2) in enumerate(merged_cols):
+                    if col_x1 <= block_center <= col_x2:
+                        best_col_idx = i
+                        break
+                
+                # Fallback: Nearest distance
+                if best_col_idx == -1:
+                    min_dist = float('inf')
+                    for i, (col_x1, col_x2) in enumerate(merged_cols):
+                        col_center = (col_x1 + col_x2) / 2
+                        dist = abs(block_center - col_center)
+                        if dist < min_dist:
+                            min_dist = dist
+                            best_col_idx = i
+                
+                if best_col_idx != -1:
+                    # Append text (handle multi-word blocks in same cell)
+                    current_text = row_data[best_col_idx]
+                    if current_text:
+                        row_data[best_col_idx] = current_text + " " + block.get("text", "")
+                    else:
+                        row_data[best_col_idx] = block.get("text", "")
+            
+            table_grid.append(row_data)
+            
+        # First row as headers
+        headers = table_grid[0] if table_grid else []
+        data_rows = table_grid[1:] if len(table_grid) > 1 else []
         
         return data_rows, headers
     

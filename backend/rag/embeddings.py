@@ -195,7 +195,18 @@ class ImageEmbedder:
                 with torch.no_grad():
                     image_features = self.model.get_image_features(**inputs)
                 
-                embedding = image_features.cpu().numpy().flatten()
+                if hasattr(image_features, 'pooler_output'):
+                    embedding = image_features.pooler_output.cpu().numpy().flatten()
+                elif hasattr(image_features, 'last_hidden_state'):
+                     # Pool it if needed, or use first token?
+                     # CLIP vision model usually pools.
+                     embedding = image_features.last_hidden_state[:, 0, :].cpu().numpy().flatten()
+                elif isinstance(image_features, torch.Tensor):
+                    embedding = image_features.cpu().numpy().flatten()
+                else:
+                    # Fallback
+                    embedding = image_features[0].cpu().numpy().flatten()
+                    
                 # Normalize
                 embedding = embedding / np.linalg.norm(embedding)
                 return embedding.tolist()
@@ -224,7 +235,15 @@ class ImageEmbedder:
                 with torch.no_grad():
                     text_features = self.model.get_text_features(**inputs)
                 
-                embedding = text_features.cpu().numpy().flatten()
+                if hasattr(text_features, 'pooler_output'):
+                    embedding = text_features.pooler_output.cpu().numpy().flatten()
+                elif hasattr(text_features, 'text_embeds'): # Some outputs have text_embeds
+                    embedding = text_features.text_embeds.cpu().numpy().flatten()
+                elif isinstance(text_features, torch.Tensor):
+                    embedding = text_features.cpu().numpy().flatten()
+                else:
+                    embedding = text_features[0].cpu().numpy().flatten()
+
                 embedding = embedding / np.linalg.norm(embedding)
                 return embedding.tolist()
                 

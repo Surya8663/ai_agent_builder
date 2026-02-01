@@ -8,6 +8,8 @@ Provides coordinate-aware text extraction with confidence scores.
 import logging
 from typing import Dict, Any, List
 import time
+import os
+import cv2
 import numpy as np
 
 from .state import (
@@ -76,17 +78,21 @@ class OCRAgent:
                 
                 logger.debug(f"OCR processing page {page_number}")
                 
-                # In real implementation:
-                # image = load_image_from_state(page_data)
-                # result = self.ocr_engine.extract_text(image, page_number)
+                # Load image for OCR
+                image_path = page_data.get("image_path")
+                if not image_path or not os.path.exists(image_path):
+                     logger.warning(f"Image path not found for page {page_number}")
+                     continue
+                     
+                image = cv2.imread(image_path)
+                if image is None:
+                     logger.warning(f"Failed to load image for OCR: {image_path}")
+                     continue
+
+                result = self.ocr_engine.extract_text(image, page_number)
                 
-                # For demo, create sample OCR output
-                width = page_data.get("width", 2480)
-                height = page_data.get("height", 3508)
-                
-                sample_result = self._create_sample_ocr(page_number, width, height)
-                
-                for block in sample_result.text_blocks:
+                # Process results
+                for block in result.text_blocks:
                     text_block = TextBlockData(
                         text=block.text,
                         x1=block.x1,
@@ -98,9 +104,9 @@ class OCRAgent:
                     )
                     all_text_blocks.append(text_block)
                 
-                page_texts[page_number] = sample_result.full_text
-                full_text_parts.append(sample_result.full_text)
-                engine_used = sample_result.engine_used
+                page_texts[page_number] = result.full_text
+                full_text_parts.append(result.full_text)
+                engine_used = result.engine_used
             
             # Also extract text from detected regions (tables, figures)
             table_detections = vision_results.get("tables", [])

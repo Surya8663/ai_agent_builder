@@ -8,11 +8,13 @@ Complete RAG pipeline for document question answering:
 - ELI5 vs Expert mode
 """
 
+import asyncio
 import logging
 from typing import Dict, Any, List, Optional
 import json
 
 from .vector_store import QdrantVectorStore
+
 from .embeddings import TextEmbedder, ImageEmbedder, TableEmbedder
 from .retriever import MultiModalRetriever, RetrievalResult
 from ..config import get_settings
@@ -74,7 +76,7 @@ class RAGPipeline:
             logger.warning(f"LLM client initialization failed: {e}")
             self.llm_client = None
     
-    def index_document(
+    async def index_document(
         self,
         document_id: str,
         fused_output: Dict[str, Any]
@@ -113,7 +115,8 @@ class RAGPipeline:
                     text_embeddings.append(self.text_embedder.embed(content))
         
         if text_chunks:
-            stats["text_chunks"] = self.vector_store.add_text_chunks(
+            stats["text_chunks"] = await asyncio.to_thread(
+                self.vector_store.add_text_chunks,
                 document_id, text_chunks, text_embeddings
             )
         
@@ -133,7 +136,8 @@ class RAGPipeline:
                 })
                 table_embeddings.append(self.table_embedder.embed_table(table))
             
-            stats["tables"] = self.vector_store.add_tables(
+            stats["tables"] = await asyncio.to_thread(
+                self.vector_store.add_tables,
                 document_id, table_data, table_embeddings
             )
         
@@ -163,7 +167,8 @@ class RAGPipeline:
                 caption = img.get("content", "figure")
                 image_embeddings.append(self.image_embedder.embed_text(caption))
             
-            stats["images"] = self.vector_store.add_images(
+            stats["images"] = await asyncio.to_thread(
+                self.vector_store.add_images,
                 document_id, image_data, image_embeddings
             )
         
