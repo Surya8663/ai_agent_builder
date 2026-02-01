@@ -76,7 +76,7 @@ test-backend:
 
 test-frontend:
 	@echo "🧪 Running frontend tests..."
-	cd frontend && npm test || echo "No frontend tests configured"
+	cd frontend && npm test -- --run
 
 test-integration:
 	@echo "🔗 Running integration tests..."

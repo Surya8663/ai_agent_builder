@@ -32,6 +32,30 @@ class Settings(BaseSettings):
         env="IMAGE_EMBEDDING_MODEL"
     )
     
+    # Computer Vision (YOLO) Configuration
+    yolo_model_path: str = Field(
+        default="yolov8n.pt",
+        env="YOLO_MODEL_PATH"
+    )
+    yolo_confidence_threshold: float = Field(
+        default=0.5,
+        env="YOLO_CONFIDENCE_THRESHOLD"
+    )
+    yolo_iou_threshold: float = Field(
+        default=0.45,
+        env="YOLO_IOU_THRESHOLD"
+    )
+    
+    # OCR Configuration
+    ocr_engine: str = Field(
+        default="hybrid",
+        env="OCR_ENGINE"  # Options: tesseract, easyocr, hybrid
+    )
+    ocr_languages: str = Field(
+        default="en",
+        env="OCR_LANGUAGES"  # Comma-separated language codes
+    )
+    
     # Document Processing
     max_file_size_mb: int = Field(default=50, env="MAX_FILE_SIZE_MB")
     supported_formats: str = Field(
@@ -91,9 +115,30 @@ QDRANT_COLLECTIONS = {
     "images": "document_images"
 }
 
-# YOLO model configuration
+# YOLO model configuration (uses settings when available)
+def get_yolo_config():
+    """Get YOLO configuration from settings"""
+    settings = get_settings()
+    return {
+        "model_path": settings.yolo_model_path,
+        "confidence_threshold": settings.yolo_confidence_threshold,
+        "iou_threshold": settings.yolo_iou_threshold,
+        "classes": [
+            "table",
+            "figure", 
+            "chart",
+            "signature",
+            "header",
+            "footer",
+            "paragraph",
+            "list",
+            "title"
+        ]
+    }
+
+# Default YOLO config for backwards compatibility
 YOLO_CONFIG = {
-    "model_path": "yolov8n.pt",  # Will use pre-trained doc layout
+    "model_path": "yolov8n.pt",
     "confidence_threshold": 0.5,
     "iou_threshold": 0.45,
     "classes": [
