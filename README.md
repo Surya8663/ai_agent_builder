@@ -65,6 +65,27 @@ Get the same content explained at different levels:
 - Automatic flagging of low-confidence extractions
 - Correction workflow with history tracking
 
+## 🏛️ Architectural Decisions
+
+### Why LangGraph over CrewAI?
+While CrewAI offers autonomous agentic behaviors, we prioritized **LangGraph** for this platform to ensure:
+- **Deterministic Control Flow**: Critical for document processing pipelines where order matters (Vision → OCR → Layout).
+- **State Management**: LangGraph's stateful graph architecture allows precise tracking of document processing stages.
+- **Production Reliability**: Avoiding the non-deterministic loops common in fully autonomous agent frameworks.
+- **Explicit Human-in-the-Loop**: Built-in support for interrupting execution for human review (validation stage).
+
+## 🏢 Enterprise Readiness
+
+### Scalability
+- **Async Processing**: FastAPIs `async/await` pattern handles concurrent document uploads efficiently.
+- **Vector Search**: Qdrant is optimized for high-dimensional vector search at scale (millions of chunks).
+- **Stateless Agents**: Agents are designed to be stateless, allowing horizontal scaling of the backend services.
+
+### Security
+- **Containerization**: Full Docker support ensures consistent and isolated execution environments.
+- **Input Validation**: Rigorous Pydantic validation sanitizes all inputs before processing.
+- **Configurable LLM Backends**: Support for private LLM deployments (via standard OpenAI-compatible endpoints) prevents data leakage.
+
 ## 🏗️ Architecture
 
 ```
