@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 import './ChatInterface.css'
 
 function ChatInterface({ document }) {
@@ -22,7 +23,7 @@ function ChatInterface({ document }) {
     const loadSuggestions = async () => {
         try {
             const response = await fetch(
-                `http://localhost:8000/api/chat/${document.document_id}/suggest`
+                `${API_BASE_URL}/api/chat/${document.document_id}/suggest`
             )
             if (response.ok) {
                 const data = await response.json()
@@ -43,7 +44,7 @@ function ChatInterface({ document }) {
 
         try {
             const response = await fetch(
-                `http://localhost:8000/api/chat/${document.document_id}`,
+                `${API_BASE_URL}/api/chat/${document.document_id}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -87,7 +88,7 @@ function ChatInterface({ document }) {
 
         try {
             const response = await fetch(
-                `http://localhost:8000/api/chat/${document.document_id}/explain?query=${encodeURIComponent(query)}`,
+                `${API_BASE_URL}/api/chat/${document.document_id}/explain?query=${encodeURIComponent(query)}`,
                 { method: 'POST' }
             )
 

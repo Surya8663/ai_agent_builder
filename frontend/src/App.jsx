@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import { API_BASE_URL } from './config'
 import Header from './components/Header'
 import DocumentUpload from './components/DocumentUpload'
 import DocumentViewer from './components/DocumentViewer'
@@ -19,7 +20,7 @@ function App() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/documents/')
+      const response = await fetch(`${API_BASE_URL}/api/documents/`)
       if (response.ok) {
         const data = await response.json()
         setDocuments(data.documents || [])
@@ -35,7 +36,7 @@ function App() {
     formData.append('file', file)
 
     try {
-      const response = await fetch('http://localhost:8000/api/documents/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
         method: 'POST',
         body: formData
       })
@@ -59,7 +60,7 @@ function App() {
 
   const handleSelectDocument = async (documentId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/documents/${documentId}/results`)
+      const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/results`)
       if (response.ok) {
         const data = await response.json()
         setSelectedDocument(data)
@@ -72,15 +73,15 @@ function App() {
 
   return (
     <div className="app">
-      <Header 
-        activeTab={activeTab} 
+      <Header
+        activeTab={activeTab}
         onTabChange={setActiveTab}
         hasDocument={!!selectedDocument}
       />
-      
+
       <main className="main-content">
         {activeTab === 'upload' && (
-          <DocumentUpload 
+          <DocumentUpload
             onUpload={handleDocumentUpload}
             isLoading={isLoading}
             documents={documents}
@@ -88,25 +89,25 @@ function App() {
             onRefresh={fetchDocuments}
           />
         )}
-        
+
         {activeTab === 'viewer' && selectedDocument && (
           <DocumentViewer document={selectedDocument} />
         )}
-        
+
         {activeTab === 'chat' && selectedDocument && (
           <ChatInterface document={selectedDocument} />
         )}
-        
+
         {activeTab === 'review' && selectedDocument && (
           <ReviewPanel document={selectedDocument} />
         )}
-        
+
         {(activeTab === 'viewer' || activeTab === 'chat' || activeTab === 'review') && !selectedDocument && (
           <div className="no-document">
             <div className="no-document-icon">📄</div>
             <h2>No Document Selected</h2>
             <p>Upload or select a document to get started</p>
-            <button 
+            <button
               className="btn btn-primary"
               onClick={() => setActiveTab('upload')}
             >

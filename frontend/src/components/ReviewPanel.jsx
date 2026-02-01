@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 import './ReviewPanel.css'
 
 function ReviewPanel({ document }) {
@@ -16,9 +17,9 @@ function ReviewPanel({ document }) {
         setIsLoading(true)
         try {
             const [flagsRes, summaryRes] = await Promise.all([
-                fetch(`http://localhost:8000/api/review/${document.document_id}/flags`),
-                fetch(`http://localhost:8000/api/review/${document.document_id}/summary`)
-            ])
+                fetch(`${API_BASE_URL}/api/review/${document.document_id}/flags`),
+                fetch(`${API_BASE_URL}/api/review/${document.document_id}/summary`)
+            ]);
 
             if (flagsRes.ok) {
                 const flagsData = await flagsRes.json()
@@ -42,7 +43,7 @@ function ReviewPanel({ document }) {
 
         try {
             const response = await fetch(
-                `http://localhost:8000/api/review/${document.document_id}/correct`,
+                `${API_BASE_URL}/api/review/${document.document_id}/correct`,
                 {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
