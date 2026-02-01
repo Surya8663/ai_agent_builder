@@ -27,7 +27,7 @@ class TextReasoningAgent:
     """
     Text Reasoning Agent for document understanding.
     
-    Uses LLM API (OpenAI/Anthropic) to:
+    Uses LLM API (Groq/Anthropic) to:
     - Summarize documents
     - Extract named entities
     - Identify key facts
@@ -44,7 +44,7 @@ class TextReasoningAgent:
         Initialize Text Reasoning Agent.
         
         Args:
-            provider: LLM provider ('openai' or 'anthropic')
+            provider: LLM provider ('groq' or 'anthropic')
             model: Model name
             api_key: API key
         """
@@ -53,7 +53,7 @@ class TextReasoningAgent:
         self.provider = provider or settings.llm_provider
         self.model = model or settings.llm_model
         self.api_key = api_key or (
-            settings.openai_api_key if self.provider == "openai" 
+            settings.groq_api_key if self.provider == "groq" 
             else settings.anthropic_api_key
         )
         
@@ -63,9 +63,9 @@ class TextReasoningAgent:
     def _initialize_client(self):
         """Initialize the LLM client"""
         try:
-            if self.provider == "openai":
-                from openai import OpenAI
-                self.client = OpenAI(api_key=self.api_key)
+            if self.provider == "groq":
+                from groq import Groq
+                self.client = Groq(api_key=self.api_key)
             elif self.provider == "anthropic":
                 import anthropic
                 self.client = anthropic.Anthropic(api_key=self.api_key)
@@ -146,7 +146,7 @@ class TextReasoningAgent:
             return self._mock_response(prompt)
         
         try:
-            if self.provider == "openai":
+            if self.provider == "groq":
                 messages = []
                 if system_prompt:
                     messages.append({"role": "system", "content": system_prompt})

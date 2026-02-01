@@ -64,9 +64,9 @@ class RAGPipeline:
         settings = get_settings()
         
         try:
-            if settings.llm_provider == "openai":
-                from openai import OpenAI
-                self.llm_client = OpenAI(api_key=settings.openai_api_key)
+            if settings.llm_provider == "groq":
+                from groq import Groq
+                self.llm_client = Groq(api_key=settings.groq_api_key)
             elif settings.llm_provider == "anthropic":
                 import anthropic
                 self.llm_client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
@@ -277,7 +277,7 @@ ANSWER:"""
             try:
                 settings = get_settings()
                 
-                if settings.llm_provider == "openai":
+                if settings.llm_provider == "groq":
                     response = self.llm_client.chat.completions.create(
                         model=settings.llm_model,
                         messages=[

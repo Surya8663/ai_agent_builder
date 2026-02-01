@@ -12,10 +12,10 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # LLM Configuration
-    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+    groq_api_key: Optional[str] = Field(default=None, env="GROQ_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
-    llm_provider: str = Field(default="openai", env="LLM_PROVIDER")
-    llm_model: str = Field(default="gpt-4-vision-preview", env="LLM_MODEL")
+    llm_provider: str = Field(default="groq", env="LLM_PROVIDER")
+    llm_model: str = Field(default="llama-3.3-70b-versatile", env="LLM_MODEL")
     
     # Qdrant Configuration
     qdrant_host: str = Field(default="localhost", env="QDRANT_HOST")
