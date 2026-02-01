@@ -217,7 +217,7 @@ Environment variables (`.env`):
 ```env
 # LLM
 LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-...
+QROK_API_KEY=sk-...
 
 # Qdrant
 QDRANT_HOST=localhost
