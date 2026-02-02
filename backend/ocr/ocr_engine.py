@@ -334,25 +334,35 @@ class EasyOCREngine(OCREngine):
         self.languages = languages or ["en"]
         self.gpu = gpu
         self.reader = None
+        self.reader_loaded = False
         
-        if EASYOCR_AVAILABLE:
-            self._initialize_reader()
-    
-    def _initialize_reader(self):
-        """Initialize the EasyOCR reader"""
+    def _ensure_reader_loaded(self):
+        """Lazy load the reader"""
+        if self.reader_loaded:
+            return
+
         try:
-            self.reader = easyocr.Reader(
-                self.languages,
-                gpu=self.gpu,
-                verbose=False
-            )
-            logger.info(f"EasyOCR initialized with languages: {self.languages}")
+            if EASYOCR_AVAILABLE:
+                self.reader = easyocr.Reader(
+                    self.languages,
+                    gpu=self.gpu,
+                    verbose=False
+                )
+                logger.info(f"EasyOCR initialized with languages: {self.languages}")
+            else:
+                 logger.warning("EasyOCR not available")
+                 self.reader = None
+            
+            self.reader_loaded = True
         except Exception as e:
             logger.error(f"Failed to initialize EasyOCR: {e}")
             self.reader = None
+            self.reader_loaded = True
     
     def is_available(self) -> bool:
         """Check if EasyOCR is available"""
+        if not self.reader_loaded:
+             self._ensure_reader_loaded()
         return EASYOCR_AVAILABLE and self.reader is not None
     
     def extract_text(
@@ -376,6 +386,8 @@ class EasyOCREngine(OCREngine):
         start_time = time.time()
         
         height, width = image.shape[:2]
+        
+        self._ensure_reader_loaded()
         
         if not self.is_available():
             logger.error("EasyOCR not available")

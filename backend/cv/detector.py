@@ -181,17 +181,18 @@ class DocumentLayoutDetector:
         self.model = None
         self.model_path = model_path
         
-        if YOLO_AVAILABLE:
-            self._load_model(model_path)
-        else:
-            logger.warning("YOLO not available. Using fallback detection.")
+        # Lazy load flag
+        self.model_loaded = False
     
-    def _load_model(self, model_path: Optional[str] = None):
-        """Load YOLO model"""
+    def _ensure_model_loaded(self):
+        """Lazy load the model only when needed"""
+        if self.model_loaded:
+            return
+
         try:
-            if model_path and Path(model_path).exists():
-                self.model = YOLO(model_path)
-                logger.info(f"Loaded custom YOLO model from {model_path}")
+            if self.model_path and Path(self.model_path).exists():
+                self.model = YOLO(self.model_path)
+                logger.info(f"Loaded custom YOLO model from {self.model_path}")
             else:
                 # Use pre-trained YOLOv8 nano as base
                 # In production, this would be a document-specific model
@@ -199,9 +200,11 @@ class DocumentLayoutDetector:
                 logger.info("Loaded pre-trained YOLOv8n model")
             
             self.model.to(self.device)
+            self.model_loaded = True
         except Exception as e:
             logger.error(f"Failed to load YOLO model: {e}")
             self.model = None
+            self.model_loaded = True  # Prevent infinite retries
     
     def detect(
         self,
@@ -224,6 +227,9 @@ class DocumentLayoutDetector:
         height, width = image.shape[:2]
         detections = []
         
+        if YOLO_AVAILABLE:
+            self._ensure_model_loaded()
+
         if self.model is not None and YOLO_AVAILABLE:
             detections = self._yolo_detect(image, page_number)
             
