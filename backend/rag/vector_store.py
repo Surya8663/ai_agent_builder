@@ -78,7 +78,15 @@ class QdrantVectorStore:
     def _connect(self):
         """Connect to Qdrant"""
         try:
-            if self.api_key:
+            if self.host == ":memory:":
+                self.client = QdrantClient(":memory:")
+                logger.warning("Using In-Memory Qdrant. DATA WILL BE LOST on restart.")
+            elif self.host and (self.host.startswith("http://") or self.host.startswith("https://")):
+                self.client = QdrantClient(
+                    url=self.host,
+                    api_key=self.api_key
+                )
+            elif self.api_key:
                 self.client = QdrantClient(
                     host=self.host,
                     port=self.port,
@@ -95,7 +103,7 @@ class QdrantVectorStore:
             logger.error(f"Failed to connect to Qdrant: {e}")
             # Use in-memory Qdrant for development
             self.client = QdrantClient(":memory:")
-            logger.warning("Using in-memory Qdrant (data will not persist)")
+            logger.warning("Using in-memory Qdrant (fallback due to connection error)")
     
     def _ensure_collections(self):
         """Ensure all required collections exist"""

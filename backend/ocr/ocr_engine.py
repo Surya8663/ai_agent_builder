@@ -19,11 +19,8 @@ try:
 except ImportError:
     TESSERACT_AVAILABLE = False
 
-try:
-    import easyocr
-    EASYOCR_AVAILABLE = True
-except ImportError:
-    EASYOCR_AVAILABLE = False
+# Imports moved to lazy load method
+EASYOCR_AVAILABLE = True
 
 import cv2
 from PIL import Image
@@ -343,6 +340,7 @@ class EasyOCREngine(OCREngine):
 
         try:
             if EASYOCR_AVAILABLE:
+                import easyocr
                 self.reader = easyocr.Reader(
                     self.languages,
                     gpu=self.gpu,

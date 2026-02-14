@@ -8,10 +8,11 @@ Supports ELI5 vs Expert mode.
 import logging
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel, Field
 
 from ...rag.rag_pipeline import RAGPipeline
+from ...agents.voice_agent import voice_agent
 from .documents import documents_store
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,66 @@ async def chat_with_document(
         raise HTTPException(
             status_code=500,
             detail=f"Query failed: {str(e)}"
+        )
+
+
+@router.post("/{document_id}/voice", response_model=ChatResponse)
+async def chat_with_document_voice(
+    document_id: str,
+    file: UploadFile = File(...),
+    mode: str = Query("standard", description="Response mode: 'standard', 'eli5', or 'expert'"),
+    include_sources: bool = Query(True, description="Include source references in response")
+):
+    """
+    Query a document using voice (audio file).
+    
+    Accepts audio file, transcribes it, and answers the query.
+    """
+    # Verify document exists and is processed
+    doc = documents_store.get(document_id)
+    
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    if doc["status"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Document not ready. Status: {doc['status']}"
+        )
+    
+    try:
+        # Read audio file
+        audio_content = await file.read()
+        
+        # Transcribe
+        query_text, _ = voice_agent.transcribe(audio_content, filename=file.filename)
+        
+        if not query_text:
+            raise HTTPException(status_code=400, detail="Could not understand audio")
+            
+        # Run RAG query
+        rag = RAGPipeline()
+        result = rag.query(
+            query=query_text,
+            document_id=document_id,
+            mode=mode,
+            include_sources=include_sources
+        )
+        
+        return ChatResponse(
+            query=query_text,
+            answer=result["answer"],
+            mode=mode,
+            sources=result.get("sources") if include_sources else None
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Voice chat failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Voice query failed: {str(e)}"
         )
 
 

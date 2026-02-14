@@ -12,11 +12,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-try:
-    from ultralytics import YOLO
-    YOLO_AVAILABLE = True
-except ImportError:
-    YOLO_AVAILABLE = False
+# Imports moved to lazy load method
+YOLO_AVAILABLE = True  # We assume it is available in the env
     
 import cv2
 
@@ -190,6 +187,8 @@ class DocumentLayoutDetector:
             return
 
         try:
+            from ultralytics import YOLO
+            
             if self.model_path and Path(self.model_path).exists():
                 self.model = YOLO(self.model_path)
                 logger.info(f"Loaded custom YOLO model from {self.model_path}")

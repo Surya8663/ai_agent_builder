@@ -15,19 +15,9 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Try importing optional dependencies
-try:
-    from sentence_transformers import SentenceTransformer
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-
-try:
-    import torch
-    from transformers import CLIPProcessor, CLIPModel
-    from PIL import Image
-    CLIP_AVAILABLE = True
-except ImportError:
-    CLIP_AVAILABLE = False
+# Imports moved to lazy load methods
+SENTENCE_TRANSFORMERS_AVAILABLE = True
+CLIP_AVAILABLE = True
 
 
 class TextEmbedder:
@@ -54,7 +44,7 @@ class TextEmbedder:
         self.model = None
         self.dimension = 384
         
-        self._initialize()
+        # Lazy load: Do not call _initialize() here
     
     def _cuda_available(self) -> bool:
         try:
@@ -65,8 +55,16 @@ class TextEmbedder:
     
     def _initialize(self):
         """Initialize the model"""
+        if self.model is not None:
+             return
+
+        if self.model_name == "mock":
+             logger.warning("Using mock text embeddings (configured)")
+             return
+
         if SENTENCE_TRANSFORMERS_AVAILABLE:
             try:
+                from sentence_transformers import SentenceTransformer
                 self.model = SentenceTransformer(self.model_name)
                 self.model.to(self.device)
                 self.dimension = self.model.get_sentence_embedding_dimension()
@@ -76,6 +74,7 @@ class TextEmbedder:
                 self.model = None
         else:
             logger.warning("sentence-transformers not available, using mock embeddings")
+    
     
     def embed(self, text: str) -> List[float]:
         """
@@ -87,6 +86,9 @@ class TextEmbedder:
         Returns:
             Embedding vector
         """
+        if self.model is None:
+             self._initialize()
+
         if self.model:
             embedding = self.model.encode(text, convert_to_numpy=True)
             return embedding.tolist()
@@ -104,6 +106,9 @@ class TextEmbedder:
         Returns:
             List of embedding vectors
         """
+        if self.model is None:
+             self._initialize()
+
         if self.model:
             embeddings = self.model.encode(texts, convert_to_numpy=True)
             return embeddings.tolist()
@@ -144,7 +149,7 @@ class ImageEmbedder:
         self.processor = None
         self.dimension = 512
         
-        self._initialize()
+        # Lazy load: Do not call _initialize() here
     
     def _cuda_available(self) -> bool:
         try:
@@ -155,8 +160,16 @@ class ImageEmbedder:
     
     def _initialize(self):
         """Initialize CLIP model"""
+        if self.model is not None:
+             return
+
+        if self.model_name == "mock":
+             logger.warning("Using mock image embeddings (configured)")
+             return
+
         if CLIP_AVAILABLE:
             try:
+                from transformers import CLIPProcessor, CLIPModel
                 self.processor = CLIPProcessor.from_pretrained(self.model_name)
                 self.model = CLIPModel.from_pretrained(self.model_name)
                 self.model.to(self.device)
@@ -178,6 +191,9 @@ class ImageEmbedder:
         Returns:
             Embedding vector
         """
+        if self.model is None:
+             self._initialize()
+
         if self.model and self.processor:
             try:
                 # Convert numpy to PIL if needed
@@ -188,6 +204,8 @@ class ImageEmbedder:
                         import cv2
                         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                     image = PILImage.fromarray(image)
+                
+                import torch
                 
                 inputs = self.processor(images=image, return_tensors="pt")
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -227,6 +245,9 @@ class ImageEmbedder:
         Returns:
             Embedding vector
         """
+        if self.model is None:
+             self._initialize()
+
         if self.model and self.processor:
             try:
                 inputs = self.processor(text=[text], return_tensors="pt", padding=True)

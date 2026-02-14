@@ -83,7 +83,12 @@ test-integration:
 	docker-compose up -d
 	sleep 10
 	curl -f http://localhost:8000/health
+	curl -f http://localhost:8000/health
 	docker-compose down
+
+test-e2e:
+	@echo "🔗 Running End-to-End integration tests..."
+	cd backend && pytest ../tests/test_integration_e2e.py -v
 
 # ============================================
 # Linting & Formatting
