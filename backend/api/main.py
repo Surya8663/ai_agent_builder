@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from ..config import get_settings
-from .routes import documents, chat, review, advanced
+from .routes import documents, chat, review, advanced, crew_analysis
 from .websocket import router as websocket_router
 
 logger = logging.getLogger(__name__)
@@ -97,6 +97,12 @@ def create_app() -> FastAPI:
     app.include_router(
         advanced.router,
         tags=["Advanced Features"]
+    )
+    
+    app.include_router(
+        crew_analysis.router,
+        prefix="/api/crew",
+        tags=["CrewAI Analysis"]
     )
     
     # Health check endpoint

@@ -7,6 +7,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Agentic-FF4B4B.svg?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain.com)
+[![CrewAI](https://img.shields.io/badge/CrewAI-Multi_Agent-FF6B35.svg?style=for-the-badge)](https://www.crewai.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-D12D6F.svg?style=for-the-badge)](https://qdrant.tech)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
 
@@ -63,7 +64,7 @@ Traditional document processing pipelines (OCR -> Text) fail when documents get 
 
 ## 🏗️ System Architecture
 
-This platform uses **LangGraph** to orchestrate a deterministic Cyclic Graph of agents.
+This platform uses a **hybrid LangGraph + CrewAI** architecture to orchestrate intelligent document processing.
 
 ```mermaid
 graph TD
@@ -130,7 +131,7 @@ npm run dev
 
 | Layer | Technologies |
 |:---|:---|
-| **Orchestration** | **LangGraph**, LangChain |
+| **Orchestration** | **LangGraph** (Pipeline), **CrewAI** (Analysis Crew) |
 | **Intelligence** | **Llama 3.1**, OpenAI, Anthropic |
 | **Vision & OCR** | **YOLOv8**, Tesseract, OpenCV, EasyOCR |
 | **Memory** | **Qdrant** (Vector Hub), Redis (Cache) |
@@ -146,7 +147,8 @@ npm run dev
 - [x] Multi-Modal RAG (Text + Tables)
 - [x] Self-Healing Agent Workflows
 - [x] Light/Dark Mode UI
-- [ ] **Voice Query Interface** (Speak to your documents)
+- [x] **Voice Query Interface** (Speak to your documents)
+- [x] **CrewAI Multi-Agent Analysis** (Analyst, Fact Checker, Summarizer crew)
 - [ ] **Private LLM Finetuning** (Train on your specific docs)
 - [ ] **Slack/Teams Integration** (Bot interface)
 

@@ -1,6 +1,6 @@
 """
-LangGraph Agent System
-6-agent pipeline for document processing
+LangGraph + CrewAI Agent System
+6-agent LangGraph pipeline + CrewAI orchestration for document processing
 """
 
 from .state import DocumentState, ProcessingStatus
@@ -11,6 +11,7 @@ from .text_reasoning_agent import TextReasoningAgent, text_reasoning_agent_node
 from .fusion_agent import FusionAgent, fusion_agent_node
 from .validation_agent import ValidationAgent, validation_agent_node
 from .workflow import create_workflow, compile_workflow, run_document_pipeline
+from .crew_orchestrator import DocumentAnalysisCrew
 
 __all__ = [
     # State
@@ -33,5 +34,7 @@ __all__ = [
     # Workflow
     "create_workflow",
     "compile_workflow",
-    "run_document_pipeline"
+    "run_document_pipeline",
+    # CrewAI
+    "DocumentAnalysisCrew"
 ]
