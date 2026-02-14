@@ -1,5 +1,9 @@
 """
-Configuration settings for the Document Intelligence Platform
+Configuration settings for the Multi-Modal Document Intelligence Platform.
+
+Supports multiple LLM providers (Groq, Anthropic, Gemini, OpenAI) and
+computer vision backends (YOLO, Tesseract, EasyOCR) for multimodal
+document analysis with CrewAI + LangGraph orchestration.
 """
 
 from pydantic_settings import BaseSettings
@@ -14,6 +18,8 @@ class Settings(BaseSettings):
     # LLM Configuration
     groq_api_key: Optional[str] = Field(default=None, env="GROQ_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    gemini_api_key: Optional[str] = Field(default=None, env="GEMINI_API_KEY")
+    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     llm_provider: str = Field(default="groq", env="LLM_PROVIDER")
     llm_model: str = Field(default="llama-3.1-8b-instant", env="LLM_MODEL")
     
